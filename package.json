@@ -1,9 +1,10 @@
 {
   "name": "tiny-store",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "build/index.js",
+  "type": "module",
   "scripts": {
-    "dev": "ts-node --watch src/index.ts",
+    "dev": "node --watch --loader ts-node/esm --experimental-loader ts-node/esm src/index.ts",
     "test": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
@@ -13,7 +14,6 @@
   "author": "Julio Canizalez",
   "license": "ISC",
   "description": "",
-  "type": "module",
   "dependencies": {
     "@prisma/client": "^5.19.1",
     "axios": "^1.7.7",
