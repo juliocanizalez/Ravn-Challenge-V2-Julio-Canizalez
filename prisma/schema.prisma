@@ -1,8 +1,93 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+enum Role {
+  MANAGER
+  CLIENT
+}
+
+enum SnackCategory {
+  CHIPS
+  CANDY
+  NUTS
+  GRANOLA_BARS
+  DRIED_FRUITS
+  POPCORN
+  SAVORY_SNACKS
+  BAKED_GOODS
+  HEALTH_SNACKS
+  BEVERAGES
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  role      Role
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[] @relation("UserProducts")
+  orders    Order[]   @relation("UserOrders")
+  likes     Product[] @relation("ProductLikes")
+  Cart      Cart[]
+  Session   Session[]
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  imageUrl    String?
+  category    SnackCategory
+  isEnabled   Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  managerId   String
+  manager     User          @relation("UserProducts", fields: [managerId], references: [id])
+  orders      Order[]       @relation("OrderProducts")
+  likes       User[]        @relation("ProductLikes")
+  CartItem    CartItem[]
+}
+
+model Order {
+  id          String    @id @default(uuid())
+  totalAmount Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  clientId    String
+  client      User      @relation("UserOrders", fields: [clientId], references: [id])
+  products    Product[] @relation("OrderProducts")
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  clientId  String
+  client    User       @relation(fields: [clientId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  quantity  Int     @default(1)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
