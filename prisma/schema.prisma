@@ -26,68 +26,95 @@ enum SnackCategory {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
+  id        String   @id @default(uuid())
+  email     String   @unique
   password  String
   role      Role
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[] @relation("UserProducts")
-  orders    Order[]   @relation("UserOrders")
-  likes     Product[] @relation("ProductLikes")
-  Cart      Cart[]
-  Session   Session[]
+  manager   Manager? @relation
+  client    Client?  @relation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Manager {
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [managerId], references: [id])
+  products  Product[]
+  managerId String    @unique
+}
+
+model Client {
+  id     Int     @id @default(autoincrement())
+  user   User    @relation(fields: [userId], references: [id])
+  cart   Cart?   @relation
+  cartId Int
+  orders Order[]
+  userId String  @unique
+  Like   Like[]
 }
 
 model Product {
-  id          String        @id @default(uuid())
+  id          Int           @id @default(autoincrement())
   name        String
   description String
   price       Float
-  imageUrl    String?
   category    SnackCategory
-  isEnabled   Boolean       @default(true)
+  isActive    Boolean       @default(true)
+  manager     Manager       @relation(fields: [managerId], references: [id])
+  managerId   Int
+  images      Image[]
+  likes       Like[]
+  CartItem    CartItem[]
+  Order       Order[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  managerId   String
-  manager     User          @relation("UserProducts", fields: [managerId], references: [id])
-  orders      Order[]       @relation("OrderProducts")
-  likes       User[]        @relation("ProductLikes")
-  CartItem    CartItem[]
 }
 
-model Order {
-  id          String    @id @default(uuid())
-  totalAmount Float
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  clientId    String
-  client      User      @relation("UserOrders", fields: [clientId], references: [id])
-  products    Product[] @relation("OrderProducts")
+model Image {
+  id        Int      @id @default(autoincrement())
+  url       String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Like {
+  id        Int     @id @default(autoincrement())
+  client    Client  @relation(fields: [clientId], references: [id])
+  clientId  Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
 }
 
 model Cart {
-  id        String     @id @default(uuid())
+  id        Int        @id @default(autoincrement())
+  client    Client     @relation(fields: [clientId], references: [id])
+  clientId  Int        @unique
+  items     CartItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  clientId  String
-  client    User       @relation(fields: [clientId], references: [id])
-  items     CartItem[]
 }
 
 model CartItem {
-  id        String  @id @default(uuid())
-  quantity  Int     @default(1)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  cartId    String
-  cart      Cart    @relation(fields: [cartId], references: [id])
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  Cart      Cart?    @relation(fields: [cartId], references: [id])
+  cartId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Session {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+model Order {
+  id        Int      @id @default(autoincrement())
+  client    Client   @relation(fields: [clientId], references: [id])
+  clientId  Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
   createdAt DateTime @default(now())
-  expiresAt DateTime
+  total     Float
+  discount  Float
 }
