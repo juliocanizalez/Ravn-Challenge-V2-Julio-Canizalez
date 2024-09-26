@@ -9,13 +9,28 @@ export const signUp = async (req: Request, res: Response) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
   try {
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         role,
       },
     });
+
+    // CREATE CLIENT OR MANAGER PROFILE
+    if (role === 'CLIENT') {
+      await prisma.client.create({
+        data: {
+          userId: user.id,
+        },
+      });
+    } else if (role === 'MANAGER') {
+      await prisma.manager.create({
+        data: {
+          managerId: user.id,
+        },
+      });
+    }
     res.status(201).redirect('/signin');
   } catch (error) {
     res.status(500).json({ error: 'User already exists.', details: error });
@@ -46,8 +61,10 @@ export const signIn = async (req: Request, res: Response) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
       expiresIn: '1h',
     });
-    req.session.userId = user.id;
+    req.session.userId = manager?.id;
     req.session.token = token;
+    req.session.role = user.role;
+
     res.redirect('/admin');
   } else {
     const client = await prisma.client.findUnique({ where: { userId } });
@@ -62,8 +79,9 @@ export const signIn = async (req: Request, res: Response) => {
       expiresIn: '1h',
     });
 
-    req.session.userId = user.id;
+    req.session.userId = client?.id;
     req.session.token = token;
+    req.session.role = user.role;
     res.redirect('/');
   }
 };

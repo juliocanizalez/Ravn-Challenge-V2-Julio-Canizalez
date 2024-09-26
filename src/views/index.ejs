@@ -27,6 +27,39 @@
   <div class="container">
     <h1 class="mt-5 text-center">Welcome to Tiny Store</h1>
     <!--PRODUCTS-->
+    <div class="container">
+      <div class="row">
+        <% products.forEach(product=> { %>
+          <div class="col-md-4 mb-4"> <!-- Adjust column size for different screen sizes -->
+            <div class="card">
+              <img src="<%= product.images.length > 0 ? product.images[0].url : 'https://via.placeholder.com/150' %>"
+                class="card-img-top" alt="<%= product.name %>">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <%= product.name %>
+                </h5>
+                <p class="card-text">
+                  <%= product.description %>
+                </p>
+                <p class="card-text"><strong>Price:</strong> $<%= product.price.toFixed(2) %>
+                </p>
+                <p class="card-text"><strong>Category:</strong>
+                  <%= product.category %>
+                </p>
+                <form action="/api/v1/products/<%= product.id %>/like" method="POST" class="d-inline">
+                  <button type="submit" class="btn <%= product.isLiked ? 'btn-danger' : 'btn-success' %>">
+                    <%= product.isLiked ? 'Unlike' : 'Like' %>
+                  </button>
+                </form>
+                <form action="/api/v1/products/<%= product.id %>?_method=DELETE" method="POST" class="d-inline">
+                  <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+      </div>
+    </div>
     <section>
 
       <div class="container">
@@ -36,94 +69,44 @@
       </div>
 
       <script>
-        async function fetchProducts() {
-          const response = await fetch(`/graphql`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              query: `query {
-                        products {
-                            id
-                            name
-                            description
-                            price
-                            imageUrl
-                        }
-                    }`,
-            }),
-          });
-
-          const result = await response.json();
-          const products = result.data.products;
-
-          const productList = document.getElementById('product-list');
-          productList.innerHTML = products.map(product => `
-                <div class="col-md-4">
-                    <div class="card mb-3">
-                        <img src="${product.imageUrl || 'placeholder.jpg'}" class="card-img-top" alt="${product.name}">
-                        <div class="card-body">
-                            <h5 class="card-title">${product.name}</h5>
-                            <p class="card-text">${product.description}</p>
-                            <p class="card-text"><strong>Price: $${product.price}</strong></p>
-                            <button class="btn btn-primary" onclick="addToCart('${product.id}')">Add to Cart</button>
-                            <button class="btn btn-warning" onclick="likeProduct('${product.id}')">Like</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
 
         async function addToCart(productId) {
-          await fetch(`/graphql`, {
+          const res = await fetch(`/api/v1/product/${productId}/cart`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              query: `mutation {
-                        addToCart(productId: "${productId}")
-                    }`,
-            }),
+            body: {},
           });
-          alert('Product added to cart!');
+
+          if (res.ok) {
+            alert('Product added to cart!');
+            window.location.reload()
+          }
         }
 
         async function likeProduct(productId) {
-          await fetch(`/graphql`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              query: `mutation {
-                        likeProduct(productId: "${productId}")
-                    }`,
-            }),
-          });
-          alert('Product liked!');
+          const token = '<%= session.token %>';
+
+          if (!token) {
+            alert('You need to login')
+            window.location.href = '/signin'
+          } else {
+            const res = await fetch(`/api/v1/product/${productId}/like`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+            });
+
+            if (res.ok) {
+              window.location.reload()
+            }
+          }
+
         }
 
-        async function buyProducts() {
-          const response = await fetch(`/graphql`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              query: `mutation {
-                        buyProducts
-                    }`,
-            }),
-          });
-
-          const result = await response.json();
-          alert(result.data.buyProducts);
-        }
-
-        // Initial fetch
-        fetchProducts();
       </script>
     </section>
   </div>

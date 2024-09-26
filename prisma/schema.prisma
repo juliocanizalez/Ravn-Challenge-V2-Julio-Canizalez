@@ -47,7 +47,7 @@ model Client {
   id     Int     @id @default(autoincrement())
   user   User    @relation(fields: [userId], references: [id])
   cart   Cart?   @relation
-  cartId Int
+  cartId Int?
   orders Order[]
   userId String  @unique
   Like   Like[]
@@ -84,7 +84,7 @@ model Like {
   client    Client  @relation(fields: [clientId], references: [id])
   clientId  Int
   product   Product @relation(fields: [productId], references: [id])
-  productId Int
+  productId Int     @unique
 }
 
 model Cart {
