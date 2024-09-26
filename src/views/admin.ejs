@@ -27,8 +27,181 @@
   <div class="container">
     <h1 class="mt-5 text-center">Welcome to Admin</h1>
 
+    <div class="container-fluid">
+      <div class="row">
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-4">
+          <h2>Manage Products</h2>
+
+          <form id="productForm" action="/api/v1/products" method="POST" enctype="multipart/form-data" class="mb-4">
+            <div class="mb-3">
+              <label for="name" class="form-label">Product Name</label>
+              <input type="text" class="form-control" id="name" name="name" required autocomplete="off">
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" required autocomplete="off"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="price" class="form-label">Price</label>
+              <input type="number" step="0.01" class="form-control" id="price" name="price" required autocomplete="off">
+            </div>
+            <div class="mb-3">
+              <label for="category" class="form-label">Category</label>
+              <select class="form-select" id="category" name="category" required>
+                <option value="">Select a category</option>
+                <option value="CHIPS">Chips</option>
+                <option value="CANDY">Candy</option>
+                <option value="NUTS">Nuts</option>
+                <option value="GRANOLA_BARS">Granola Bars</option>
+                <option value="DRIED_FRUITS">Dried Fruits</option>
+                <option value="POPCORN">Popcorn</option>
+                <option value="SAVORY_SNACKS">Savory Snacks</option>
+                <option value="BAKED_GOODS">Baked Goods</option>
+                <option value="HEALTH_SNACKS">Health Snacks</option>
+                <option value="BEVERAGES">Beverages</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="image" class="form-label">Product Image</label>
+              <input class="form-control" type="file" id="image" name="image" accept="image/*">
+            </div>
+            <div class="form-check mb-3">
+              <input type="checkbox" id="isActive" name="isActive" class="form-check-input" value="true" checked>
+              <label for="isActive" class="form-check-label">Enabled</label>
+            </div>
+            <button type="button" onclick="submitForm()" class="btn btn-primary">Create Product</button>
+            <button type="button" onclick="updateProduct()" class="btn btn-secondary">Update Product</button>
+          </form>
+
+          <div id="productRecords">
+            <h3>Product Records</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Price</th>
+                  <th>Category</th>
+                  <th>Image</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% products.forEach(product=> { %>
+                  <tr
+                    onclick="editProduct(<%= product.id %>, '<%- product.name.replace(/'/g, '\\\'') %>', '<%- product.description.replace(/'/g, '\\\'') %>', <%= product.price %>, '<%- product.category.replace(/'/g, '\\\'') %>', <%= product.isActive %>)">
+                    <td>
+                      <%= product.id %>
+                    </td>
+                    <td>
+                      <%= product.name %>
+                    </td>
+                    <td>
+                      <%= product.description %>
+                    </td>
+                    <td>
+                      <%= product.price.toFixed(2) %>
+                    </td>
+                    <td>
+                      <%= product.category %>
+                    </td>
+                    <td>
+                      <% if (product.images.length> 0) { %>
+                        <img src="<%= product.images[0].url %>" alt="Image" class="img-fluid"
+                          style="max-width: 100px;" /> <!-- Show the first image -->
+                        <% } else { %>
+                          <span>No image</span>
+                          <% } %>
+                    </td>
+                    <td>
+                      <button type="button" onclick="deleteProduct(<%= product.id %>)" class="btn btn-danger btn-sm">
+                        Delete
+                      </button>
+                      <button type="button" onclick="disableProduct(<%= product.id %>)" class="btn btn-warning btn-sm">
+                        Disable
+                      </button>
+                    </td>
+                  </tr>
+                  <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </div>
+    </div>
   </div>
 </body>
+
+<script>
+  const submitForm = async () => {
+    const token = '<%= session.token %>';
+    const form = document.getElementById('productForm');
+    const formData = new FormData(form);
+
+    const res = await fetch(form.action, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    })
+
+    if (res.ok) {
+      window.location.reload()
+    }
+  }
+
+  const deleteProduct = async (id) => {
+    const token = '<%= session.token %>';
+
+    const res = await fetch(`/api/v1/products/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
+    if (res.ok) {
+      window.location.reload()
+    }
+  }
+
+  const disableProduct = async (id) => {
+    const token = '<%= session.token %>';
+
+    const res = await fetch(`/api/v1/products/${id}`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` } })
+    if (res.ok) {
+      window.location.reload()
+    }
+  }
+
+  const editProduct = (id, name, description, price, category, isActive) => {
+    setAction(`/api/v1/products/${id}`);
+    document.getElementById('name').value = name;
+    document.getElementById('description').value = description;
+    document.getElementById('price').value = price;
+    document.getElementById('category').value = category;
+    document.querySelector('input[name="isActive"]').checked = isActive === true || isActive === 'true';
+  }
+
+  const setAction = (action) => {
+    document.getElementById('productForm').action = action
+  }
+
+  const updateProduct = async () => {
+    const token = '<%= session.token %>';
+    const form = document.getElementById('productForm');
+    const formData = new FormData(form);
+
+    const res = await fetch(form.action, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    })
+
+    if (res.ok) {
+      window.location.reload()
+    }
+  }
+
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
   integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
